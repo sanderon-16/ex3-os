@@ -1,5 +1,24 @@
 #include <pthread.h>
 # include "MapReduceFramework.h"
+# include "Barrier.h"
+
+struct JobContext{
+    Barrier* barrier;
+    const MapReduceClient* client;
+    const InputVec* inputVec;
+    IntermediateVec* intermediateVec;
+    OutputVec* outputVec;
+    std::vector<std::vector<std::pair<K2*, V2*>>> shuffleVec;
+    stage_t stage;
+};
+
+struct ThreadContext{
+    const JobContext* jobContext;
+
+    // each thread has its own intermediateVec to sort and reduce to outputVec
+    IntermediateVec* intermediateVec;
+    OutputVec* outputVec;
+};
 
 struct JobContext {
     int threadID;
