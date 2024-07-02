@@ -13,8 +13,8 @@
 struct JobContext {
     Barrier *barrier;
     const MapReduceClient *client;
-    stage_t stage;
-    std::atomic<uint32_t> *atomic_counter;
+    stage_t stage = UNDEFINED_STAGE;
+    std::atomic<uint64_t> *atomic_counter;
 
     const InputVec *input_vec;
     OutputVec *output_vec;

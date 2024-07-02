@@ -3,4 +3,5 @@ project(ex3)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(ex3 MapReduceFramework.cpp ThreadAction.h ThreadAction.cpp Context.h)
+add_executable(ex3 MapReduceFramework.cpp ThreadAction.cpp Barrier.cpp SampleClient.cpp)
+

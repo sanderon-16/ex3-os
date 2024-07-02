@@ -1,5 +1,5 @@
-# include "MapReduceFramework.h"
-# include "ThreadAction.h"
+#include "MapReduceFramework.h"
+#include "ThreadAction.h"
 #include <pthread.h>
 
 JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &inputVec,
@@ -17,10 +17,13 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     jc->client = &client;
     jc->output_vec = &outputVec;
     jc->stage = UNDEFINED_STAGE;
+    jc->atomic_counter = new std::atomic<uint64_t>(0);
+    // todo maybe init shuffle vec
 
     // assigning the job context to each of the thread contexts
     for (int i = 0; i < multiThreadLevel; i++) {
         contexts[i].job_context = jc;
+        contexts[i].intermediate_vec = new std::vector<IntermediatePair>();
     }
 
     // changing to map stage and start mapping
