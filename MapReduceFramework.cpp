@@ -1,9 +1,14 @@
+#include <pthread.h>
 # include "MapReduceFramework.h"
 
-JobHandle startMapReduceJob(const MapReduceClient &client,
-                            const InputVec &inputVec, OutputVec &outputVec,
-                            int multiThreadLevel) {
-
+struct JobContext {
+    int threadID;
+    Barrier* barrier;
+};
+JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &inputVec,
+                            OutputVec &outputVec, int multiThreadLevel) {
+    pthread_t threads[multiThreadLevel];
+    JobContext contexts[multiThreadLevel];
 }
 
 void waitForJob(JobHandle job) {
