@@ -17,7 +17,6 @@ struct JobContext {
     std::atomic<uint32_t> *atomic_counter;
 
     const InputVec *input_vec;
-    IntermediateVec *intermediate_vec;
     OutputVec *output_vec;
     std::vector<std::vector<std::pair<K2 *, V2 *>>> shuffle_vec;
 };
@@ -29,5 +28,6 @@ struct ThreadContext {
     // each thread has its own intermediateVec to sort
     IntermediateVec *intermediate_vec;
 };
+
 
 #endif //EX3_CONTEXT_H

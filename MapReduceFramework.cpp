@@ -7,11 +7,11 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
 
     // initializing the threads, the global job context, the barrier and a thread context for each thread
     pthread_t threads[multiThreadLevel];
-    ThreadContext contexts[multiThreadLevel];
+    auto contexts = new ThreadContext[multiThreadLevel];
     auto jc = new JobContext();
-    Barrier barrier(inputVec.size());
+    Barrier barrier(multiThreadLevel);
 
-    // initializing the attributes of the global job context
+    // initializing the attributes of the global job context TODO check if by reference is ok
     jc->barrier = &barrier;
     jc->input_vec = &inputVec;
     jc->client = &client;
@@ -26,10 +26,10 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     // changing to map stage and start mapping
     jc->stage = MAP_STAGE;
     for (int i = 0; i < multiThreadLevel; i++) {
-        pthread_create(threads + i, NULL, thread_action, contexts + i);
+        pthread_create(threads + i, nullptr, thread_action, contexts + i);
     }
 
-
+    return static_cast<JobHandle>(jc);
 }
 
 void waitForJob(JobHandle job) {

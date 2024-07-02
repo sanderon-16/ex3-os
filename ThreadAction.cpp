@@ -2,7 +2,8 @@
 
 void *thread_action(void *context) {
 
-    JobContext* job_context = context->job_context;
+    auto ct = (ThreadContext*) context;
+    JobContext* job_context = ct->job_context;
 
     // loop map
     while (*(job_context->atomic_counter) < job_context->input_vec->size()) // exit when all the input was mapped
@@ -14,7 +15,7 @@ void *thread_action(void *context) {
     }
 
     // sort intermediate
-    std::sort(context->intermediate_vec->begin(), context->intermediate_vec->end(), compare_pairs);
+    std::sort(ct->intermediate_vec->begin(), ct->intermediate_vec->end(), compare_pairs);
 
 
     // shuffle if the id is 0
