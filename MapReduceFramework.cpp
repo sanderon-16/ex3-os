@@ -1,6 +1,6 @@
-#include <pthread.h>
 # include "MapReduceFramework.h"
-# include "Context.h"
+# include "ThreadAction.h"
+#include <pthread.h>
 
 JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &inputVec,
                             OutputVec &outputVec, int multiThreadLevel) {
@@ -13,14 +13,14 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
 
     // initializing the attributes of the global job context
     jc->barrier = &barrier;
-    jc->inputVec = &inputVec;
+    jc->input_vec = &inputVec;
     jc->client = &client;
-    jc->outputVec = &outputVec;
+    jc->output_vec = &outputVec;
     jc->stage = UNDEFINED_STAGE;
 
     // assigning the job context to each of the thread contexts
     for (int i = 0; i < multiThreadLevel; i++) {
-        contexts[i].jobContext = jc;
+        contexts[i].job_context = jc;
     }
 
     // changing to map stage and start mapping
@@ -45,10 +45,10 @@ void closeJobHandle(JobHandle job) {
 }
 
 void emit2(K2 *key, V2 *value, void *context) {
-    ((ThreadContext*)context)->intermediateVec->push_back(std::pair<K2 *, V2 *>(key, value));
+    ((ThreadContext*)context)->intermediate_vec->push_back(std::pair<K2 *, V2 *>(key, value));
 }
 
 void emit3(K3 *key, V3 *value, void *context) {
-    ((ThreadContext*)context)->jobContext->outputVec->push_back(std::pair<K3 *, V3 *>(key, value));
+    ((ThreadContext*)context)->job_context->output_vec->push_back(std::pair<K3 *, V3 *>(key, value));
 }
 

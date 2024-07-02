@@ -6,9 +6,11 @@
 #define EX3_THREADACTION_H
 
 #include "Barrier.h"
+# include "Context.h"
+
 #include <algorithm>
 
-void *threadAction(void *arg);
+void *thread_action(void *context);
 
 int compare_pairs(const IntermediatePair& a, const IntermediatePair& b);
 

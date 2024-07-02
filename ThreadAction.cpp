@@ -1,7 +1,6 @@
-# include "Context.h"
 # include "ThreadAction.h"
 
-void *threadAction(ThreadContext *context) {
+void *thread_action(void *context) {
 
     JobContext* job_context = context->job_context;
 
