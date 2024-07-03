@@ -18,7 +18,7 @@ struct JobContext {
 
     const InputVec *input_vec;
     OutputVec *output_vec;
-    std::vector<std::vector<std::pair<K2 *, V2 *>>> shuffle_vec;
+    std::vector<IntermediateVec> shuffle_vec;
 };
 
 struct ThreadContext {
