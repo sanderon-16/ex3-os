@@ -1,4 +1,5 @@
 # include "ThreadAction.h"
+# include <iostream>
 
 void *thread_action(void *context) {
 
@@ -9,14 +10,12 @@ void *thread_action(void *context) {
     while (*(job_context->atomic_counter) < job_context->input_vec->size()) // exit when all the input was mapped
     {
         uint32_t old_value = (*(job_context->atomic_counter))++; // advance the atomic timer
-
         job_context->client->map(job_context->input_vec->at(old_value).first,
                                           job_context->input_vec->at(old_value).second, context);
     }
 
     // sort intermediate
     std::sort(ct->intermediate_vec->begin(), ct->intermediate_vec->end(), compare_pairs);
-
 
     // shuffle if the id is 0
 

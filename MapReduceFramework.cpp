@@ -17,7 +17,7 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     jc->client = &client;
     jc->output_vec = &outputVec;
     jc->stage = UNDEFINED_STAGE;
-    jc->atomic_counter = new std::atomic<uint64_t>(0);
+    jc->atomic_counter = new std::atomic<uint64_t>(0); //todo check for errors in init
     // todo maybe init shuffle vec
 
     // assigning the job context to each of the thread contexts
@@ -29,6 +29,7 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     // changing to map stage and start mapping
     jc->stage = MAP_STAGE;
     for (int i = 0; i < multiThreadLevel; i++) {
+        //TODO check for errors
         pthread_create(threads + i, nullptr, thread_action, contexts + i);
     }
 
@@ -40,7 +41,18 @@ void waitForJob(JobHandle job) {
 }
 
 void getJobState(JobHandle job, JobState *state) {
+    auto jc = (JobContext*) job;
 
+    // the jc stage and percentage is updated independently inside startmapreducejob
+    state->stage = jc->stage;
+    if (state->stage == MAP_STAGE)
+    {
+        state->percentage =  100 * (((float)*jc->atomic_counter) / (float) jc->input_vec->size());
+    }
+    else
+    {
+        state->percentage = -1; // todo fill this
+    }
 }
 
 void closeJobHandle(JobHandle job) {
