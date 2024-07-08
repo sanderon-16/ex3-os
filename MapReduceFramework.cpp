@@ -14,13 +14,16 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     // initializing the attributes of the global job context TODO check if by reference is ok
     jc->barrier = new Barrier(multiThreadLevel);
     jc->input_vec = &inputVec;
+    pthread_mutex_init(&jc->input_vec_mutex, nullptr);
     jc->client = &client;
     jc->output_vec = &outputVec;
-    jc->stage = UNDEFINED_STAGE;
+    pthread_mutex_init(&jc->output_vec_mutex, nullptr);
     jc->threads_p = threads;
     jc->atomic_counter = new std::atomic<uint64_t>(0x0000000000000000); //todo check for errors in init
     jc->personal_vecs = new std::vector<IntermediateVec *>(0);
+    pthread_mutex_init(&jc->personal_vecs_mutex, nullptr);
     jc->shuffle_vec = new std::vector<IntermediateVec *>(0);
+    pthread_mutex_init(&jc->shuffle_vec_mutex, nullptr);
     jc->num_threads = multiThreadLevel;
     jc->waiting = false;
 
@@ -43,7 +46,6 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
         return nullptr;
     }
     // changing to map stage and start mapping
-    jc->stage = MAP_STAGE;
     *(jc->atomic_counter) = SET_LEFT_NUMBER((uint64_t) jc->atomic_counter->load(), (uint64_t) 1);
     for (int i = 0; i < multiThreadLevel; i++) {
         if (pthread_create(threads + i, nullptr, thread_action, contexts + i) != 0) {
@@ -58,12 +60,9 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
 
 void waitForJob(JobHandle job) {
     auto jc = (JobContext *) job;
-    if (!jc->waiting) {
-        for (int i = 0; i < jc->num_threads; i++) {
-            pthread_join(jc->threads_p[0], nullptr);
-            jc->waiting = false;
-        }
-    }
+    jc->waiting = true;
+    jc->barrier->barrier();
+    jc->waiting = false;
 }
 
 void getJobState(JobHandle job, JobState *state) {
@@ -104,10 +103,31 @@ void closeJobHandle(JobHandle job) {
 
 void emit2(K2 *key, V2 *value, void *context) {
     int id = ((ThreadContext *) context)->threadID;
+    // lock the personal vecs
+    int res = pthread_mutex_lock(&((ThreadContext *) context)->job_context->personal_vecs_mutex);
+    if (res != 0) {
+        std::cerr << "system error: mutex lock failed in emit2\n";
+        return;
+    }
     (*((ThreadContext *) context)->job_context->personal_vecs)[id]->push_back(std::pair<K2 *, V2 *>(key, value));
+    res = pthread_mutex_unlock(&((ThreadContext *) context)->job_context->personal_vecs_mutex);
+    if (res != 0) {
+        std::cerr << "system error: mutex unlock failed in emit2\n";
+        return;
+    }
 }
 
 void emit3(K3 *key, V3 *value, void *context) {
+    int res = pthread_mutex_lock(&((ThreadContext *) context)->job_context->output_vec_mutex);
+    if (res != 0) {
+        std::cerr << "system error: mutex lock failed in emit3\n";
+        return;
+    }
     ((ThreadContext *) context)->job_context->output_vec->push_back(std::pair<K3 *, V3 *>(key, value));
+    res = pthread_mutex_unlock(&((ThreadContext *) context)->job_context->output_vec_mutex);
+    if (res != 0) {
+        std::cerr << "system error: mutex unlock failed in emit3\n";
+        return;
+    }
 }
 

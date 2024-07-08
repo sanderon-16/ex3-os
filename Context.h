@@ -13,7 +13,6 @@
 struct JobContext {
     Barrier *barrier;
     const MapReduceClient *client;
-    stage_t stage = UNDEFINED_STAGE;
     std::atomic<uint64_t> *atomic_counter;
     int num_threads;
     bool waiting;
@@ -21,9 +20,13 @@ struct JobContext {
     uint64_t total_pairs;
 
     const InputVec *input_vec;
+    pthread_mutex_t input_vec_mutex;
     OutputVec *output_vec;
+    pthread_mutex_t output_vec_mutex;
     std::vector<IntermediateVec*> *personal_vecs;
+    pthread_mutex_t personal_vecs_mutex;
     std::vector<IntermediateVec*> *shuffle_vec;
+    pthread_mutex_t shuffle_vec_mutex;
 };
 
 struct ThreadContext {
