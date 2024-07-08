@@ -11,9 +11,10 @@ void *thread_action(void *context) {
 
 
     // loop map
-    while (GET_RIGHT_NUMBER((uint64_t)*(job_context->atomic_counter)) < input_vector_size) // exit when all the input was mapped
+    while (GET_RIGHT_NUMBER((uint64_t) *(job_context->atomic_counter)) <
+           input_vector_size) // exit when all the input was mapped
     {
-        auto old_value = (uint64_t)(job_context->atomic_counter->fetch_add(INC_RIGHT)); // advance the atomic timer
+        auto old_value = (uint64_t) (job_context->atomic_counter->fetch_add(INC_RIGHT)); // advance the atomic timer
         job_context->client->map(job_context->input_vec->at(GET_RIGHT_NUMBER(old_value)).first,
                                  job_context->input_vec->at(GET_RIGHT_NUMBER(old_value)).second, context);
     }
@@ -31,10 +32,11 @@ void *thread_action(void *context) {
         // todo fill this
         //TODO ac=0
 
-        while (GET_MIDDLE_NUMBER(job_context->atomic_counter->load()) >
-               GET_RIGHT_NUMBER(job_context->atomic_counter->load())) {
+        while (!job_context->personal_vecs.empty()) {
+            // create vector for new k
             job_context->shuffle_vec->emplace_back();
 
+            // find minimal k
             K2 *lowest_k2 = nullptr;
             for (int i = 0; i < job_context->num_threads; i++) {
                 if (!job_context->personal_vecs[i]->empty() && lowest_k2 == nullptr) {
@@ -46,16 +48,21 @@ void *thread_action(void *context) {
                 }
             }
 
+            // add all pairs
             for (int i = 0; i < job_context->num_threads; i++) {
-                if (!job_context->personal_vecs[i]->empty()) {
+                while (!job_context->personal_vecs[i]->empty()) {
                     if (!(job_context->personal_vecs[i]->front().first > lowest_k2)) {
-                        while (!(job_context->personal_vecs[i]->front().first > lowest_k2)) {
-                            job_context->shuffle_vec->back().push_back(
-                                    std::move(job_context->personal_vecs[i]->front()));
-                            job_context->personal_vecs[i]->erase(job_context->personal_vecs[i]->begin());
-                            job_context->atomic_counter++;
-                        }
+                        job_context->shuffle_vec->back().push_back(
+                                std::move(job_context->personal_vecs[i]->front()));
+                        job_context->personal_vecs[i]->erase(job_context->personal_vecs[i]->begin());
+                        job_context->atomic_counter->fetch_add(INC_MIDDLE);
+                    } else {
+                        break;
                     }
+                }
+                if (job_context->personal_vecs[i]->empty()) {
+                    delete job_context->personal_vecs[i];
+                    job_context->personal_vecs.erase(job_context->personal_vecs.begin() + i);
                 }
             }
         }
