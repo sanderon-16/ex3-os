@@ -65,11 +65,8 @@ void *thread_action(void *context) {
                 }
             }
         }
-
-        job_context->barrier->barrier();
-    } else {
-        job_context->barrier->barrier();
     }
+    job_context->barrier->barrier();
 
     // loop reduce
     while (GET_MIDDLE_NUMBER((uint64_t)*(job_context->atomic_counter)) > 0) // exit when all the input was reduced

@@ -16,6 +16,8 @@ struct JobContext {
     stage_t stage = UNDEFINED_STAGE;
     std::atomic<uint64_t> *atomic_counter;
     int num_threads;
+    bool waiting;
+    pthread_t* threads_p;
 
     const InputVec *input_vec;
     OutputVec *output_vec;
