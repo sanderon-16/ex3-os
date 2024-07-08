@@ -18,6 +18,7 @@ struct JobContext {
     int num_threads;
     bool waiting;
     pthread_t* threads_p;
+    uint64_t total_pairs;
 
     const InputVec *input_vec;
     OutputVec *output_vec;

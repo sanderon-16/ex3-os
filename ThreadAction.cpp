@@ -27,34 +27,37 @@ void *thread_action(void *context) {
     // shuffle if the id is 0
     if (thread_context->threadID == 0) {
         job_context->stage = SHUFFLE_STAGE;
+        job_context->total_pairs = 0;
+        for (int i = 0; i < job_context->personal_vecs->size(); i++) {
+            job_context->total_pairs += (*job_context->personal_vecs)[i]->size();
+        }
+
         job_context->atomic_counter->fetch_add(INC_LEFT);
-        // todo fill this
-        //TODO ac=0
+        *(job_context->atomic_counter) = SET_RIGHT_NUMBER((uint64_t) *(job_context->atomic_counter), (uint64_t) 0);
 
         while (!(*job_context->personal_vecs).empty()) {
-            std::cout << "personal vecs size: " << (*job_context->personal_vecs).size() << "\n";
 
             // create vector for new k
             job_context->shuffle_vec->push_back(new IntermediateVec());
+            job_context->atomic_counter->fetch_add(INC_RIGHT);
 
             // find minimal k
             K2 *lowest_k2 = nullptr;
-            for (int i = 0; i < job_context->num_threads; i++) {
+            for (int i = 0; i < job_context->personal_vecs->size(); i++) {
                 if (!(*job_context->personal_vecs)[i]->empty() && lowest_k2 == nullptr) {
                     lowest_k2 = (*job_context->personal_vecs)[i]->front().first;
                 } else if (!(*job_context->personal_vecs)[i]->empty()) {
-                    if (lowest_k2 > (*job_context->personal_vecs)[i]->front().first) {
+                    if (*(*job_context->personal_vecs)[i]->front().first < *lowest_k2) {
                         lowest_k2 = (*job_context->personal_vecs)[i]->front().first;
                     }
                 }
             }
 
             // add all pairs
-            for (int i = 0; i < job_context->num_threads; i++) {
-                std::cout<< "forloop\n";
+            for (int i = 0; i < job_context->personal_vecs->size(); i++) {
                 while (!(*job_context->personal_vecs)[i]->empty()) {
-                    std::cout<< "inner while" << std::endl;
-                    if (!((*job_context->personal_vecs)[i]->front().first > lowest_k2)) {
+                    if (!(*lowest_k2 < *(*job_context->personal_vecs)[i]->front().first) &&
+                        !((*(*job_context->personal_vecs)[i]->front().first) < *lowest_k2)) {
                         job_context->shuffle_vec->back()->push_back(
                                 std::move((*job_context->personal_vecs)[i]->front()));
                         (*job_context->personal_vecs)[i]->erase((*job_context->personal_vecs)[i]->begin());
@@ -70,23 +73,23 @@ void *thread_action(void *context) {
                 }
             }
         }
-    }
-    if (thread_context->threadID == 0) {
         // this is thread safe because only thread-0 is allowed to do it.
-        *(job_context->atomic_counter) = SET_RIGHT_NUMBER((uint64_t) *(job_context->atomic_counter), (uint64_t)0);
+        *(job_context->atomic_counter) = SET_MIDDLE_NUMBER((uint64_t) *(job_context->atomic_counter), (uint64_t) 0);
+        // inc the left number
+        job_context->stage = REDUCE_STAGE;
+        job_context->atomic_counter->fetch_add(INC_LEFT);
     }
+
     job_context->barrier->barrier();
 
-    // inc the left number
-    job_context->stage = REDUCE_STAGE;
-    job_context->atomic_counter->fetch_add(INC_LEFT);
     // loop reduce
-    while (GET_RIGHT_NUMBER((uint64_t) *(job_context->atomic_counter)) < job_context->shuffle_vec->size()) // exit when all the input was reduced
+    while (GET_MIDDLE_NUMBER((uint64_t) *(job_context->atomic_counter)) <
+           job_context->shuffle_vec->size()) // exit when all the input was reduced
     {
-        auto old_value = (uint64_t) (job_context->atomic_counter->fetch_add(INC_RIGHT)); // advance the atomic timer
-        job_context->client->reduce( (*(job_context->shuffle_vec))[GET_RIGHT_NUMBER(old_value)] , context);
-        std::cout << "atomic_counter stage 3: " << std::bitset<64>((uint64_t) *(job_context->atomic_counter))
-                  << "\n";
+        auto old_value = (uint64_t) (job_context->atomic_counter->fetch_add(INC_MIDDLE)); // advance the atomic timer
+        std::cout << "trying to access shuffle vec in the index: " << GET_MIDDLE_NUMBER(old_value) << "out of: "
+                  << job_context->shuffle_vec->size() << "\n";
+        job_context->client->reduce((*(job_context->shuffle_vec))[GET_MIDDLE_NUMBER(old_value)], context);
     }
 }
 
