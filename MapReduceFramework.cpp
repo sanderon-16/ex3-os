@@ -24,6 +24,7 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     for (int i = 0; i < multiThreadLevel; i++) {
         contexts[i].job_context = jc;
         contexts[i].intermediate_vec = new std::vector<IntermediatePair>();
+        contexts[i].threadID = i;
     }
 
     // changing to map stage and start mapping
