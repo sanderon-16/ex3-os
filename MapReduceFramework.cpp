@@ -23,7 +23,7 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     // assigning the job context to each of the thread contexts
     for (int i = 0; i < multiThreadLevel; i++) {
         contexts[i].job_context = jc;
-        contexts[i].intermediate_vec = new std::vector<IntermediatePair>();
+        jc->personal_vecs[i] = new std::vector<IntermediatePair>();
         contexts[i].threadID = i;
     }
 
@@ -72,7 +72,8 @@ void closeJobHandle(JobHandle job) {
 }
 
 void emit2(K2 *key, V2 *value, void *context) {
-    ((ThreadContext*)context)->intermediate_vec->push_back(std::pair<K2 *, V2 *>(key, value));
+    int id = ((ThreadContext*)context)->threadID;
+    ((ThreadContext*)context)->job_context->personal_vecs[id]->push_back(std::pair<K2 *, V2 *>(key, value));
 }
 
 void emit3(K3 *key, V3 *value, void *context) {
