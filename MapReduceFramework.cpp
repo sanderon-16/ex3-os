@@ -17,6 +17,7 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     jc->client = &client;
     jc->output_vec = &outputVec;
     jc->stage = UNDEFINED_STAGE;
+    jc->threads_p = threads;
     jc->atomic_counter = new std::atomic<uint64_t>(0x0000000000000000); //todo check for errors in init
     // todo maybe init shuffle vec
 
@@ -29,8 +30,8 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
 
     // changing to map stage and start mapping
     jc->stage = MAP_STAGE;
-    *(jc->atomic_counter) = SET_LEFT_NUMBER((uint64_t)jc->atomic_counter->load(), (uint64_t)1);
-    *(jc->atomic_counter) = SET_MIDDLE_NUMBER((uint64_t)jc->atomic_counter->load(), inputVec.size());
+    *(jc->atomic_counter) = SET_LEFT_NUMBER((uint64_t) jc->atomic_counter->load(), (uint64_t) 1);
+    *(jc->atomic_counter) = SET_MIDDLE_NUMBER((uint64_t) jc->atomic_counter->load(), inputVec.size());
     for (int i = 0; i < multiThreadLevel; i++) {
         //TODO check for errors
         pthread_create(threads + i, nullptr, thread_action, contexts + i);
@@ -40,43 +41,44 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
 }
 
 void waitForJob(JobHandle job) {
-
+    auto jc = (JobContext *) job;
+    if (!jc->waiting) {
+        for (int i = 0; i < jc->num_threads; i++) {
+            pthread_join(jc->threads_p[0], nullptr);
+            jc->waiting = false;
+        }
+    }
 }
 
 void getJobState(JobHandle job, JobState *state) {
-    auto jc = (JobContext*) job;
+    auto jc = (JobContext *) job;
 
     // the jc stage and percentage is updated independently inside startmapreducejob
     state->stage = (stage_t) GET_LEFT_NUMBER(jc->atomic_counter->load());
-    if (state->stage == MAP_STAGE)
-    {
+    if (state->stage == MAP_STAGE) {
         uint64_t current_count = GET_RIGHT_NUMBER(jc->atomic_counter->load());
         uint64_t size = GET_MIDDLE_NUMBER(jc->atomic_counter->load());
-        state->percentage =  100 * (((float)current_count) / (float) size);
-    }
-    else
-    {
-        state->percentage = -1; // todo fill this
+        state->percentage = 100 * (((float) current_count) / (float) size);
+    } else if (state->stage == SHUFFLE_STAGE) {
+        uint64_t current_count = GET_RIGHT_NUMBER(jc->atomic_counter->load());
+        uint64_t size = GET_MIDDLE_NUMBER(jc->atomic_counter->load());
+        state->percentage = 100 * (((float) current_count) / (float) size);
     }
 }
 
 void closeJobHandle(JobHandle job) {
-    auto jc = (JobContext*) job;
-    while(jc->stage != REDUCE_STAGE ) // todo needs another condition
-    {
-        // wait for the job to finish
-    }
+    auto jc = (JobContext *) job;
+    waitForJob(job);
     delete jc->atomic_counter;
     delete jc;
-
 }
 
 void emit2(K2 *key, V2 *value, void *context) {
-    int id = ((ThreadContext*)context)->threadID;
-    ((ThreadContext*)context)->job_context->personal_vecs[id]->push_back(std::pair<K2 *, V2 *>(key, value));
+    int id = ((ThreadContext *) context)->threadID;
+    ((ThreadContext *) context)->job_context->personal_vecs[id]->push_back(std::pair<K2 *, V2 *>(key, value));
 }
 
 void emit3(K3 *key, V3 *value, void *context) {
-    ((ThreadContext*)context)->job_context->output_vec->push_back(std::pair<K3 *, V3 *>(key, value));
+    ((ThreadContext *) context)->job_context->output_vec->push_back(std::pair<K3 *, V3 *>(key, value));
 }
 
