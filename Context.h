@@ -15,18 +15,17 @@ struct JobContext {
     const MapReduceClient *client;
     stage_t stage = UNDEFINED_STAGE;
     std::atomic<uint64_t> *atomic_counter;
+    int num_threads;
 
     const InputVec *input_vec;
     OutputVec *output_vec;
-    std::vector<IntermediateVec> shuffle_vec;
+    std::vector<IntermediateVec*> personal_vecs;
+    std::vector<IntermediateVec> *shuffle_vec;
 };
 
 struct ThreadContext {
     JobContext *job_context;
     int threadID;
-
-    // each thread has its own intermediateVec to sort
-    IntermediateVec *intermediate_vec;
 };
 
 
