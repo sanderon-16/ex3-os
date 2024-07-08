@@ -21,7 +21,8 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     jc->atomic_counter = new std::atomic<uint64_t>(0x0000000000000000); //todo check for errors in init
     jc->personal_vecs = new std::vector<IntermediateVec*>(0);
     jc->shuffle_vec = new std::vector<IntermediateVec>(0);
-    // todo maybe init shuffle vec
+    jc->num_threads = multiThreadLevel;
+    jc->waiting = false;
 
     // assigning the job context to each of the thread contexts
     for (int i = 0; i < multiThreadLevel; i++) {
@@ -33,9 +34,7 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     // changing to map stage and start mapping
     jc->stage = MAP_STAGE;
     *(jc->atomic_counter) = SET_LEFT_NUMBER((uint64_t)jc->atomic_counter->load(), (uint64_t)1);
-    *(jc->atomic_counter) = SET_MIDDLE_NUMBER((uint64_t)jc->atomic_counter->load(), inputVec.size());
     for (int i = 0; i < multiThreadLevel; i++) {
-        //TODO check for errors
         pthread_create(threads + i, nullptr, thread_action, contexts + i);
     }
 
@@ -59,7 +58,7 @@ void getJobState(JobHandle job, JobState *state) {
     state->stage = (stage_t) GET_LEFT_NUMBER(jc->atomic_counter->load());
     if (state->stage == MAP_STAGE) {
         uint64_t current_count = GET_RIGHT_NUMBER(jc->atomic_counter->load());
-        uint64_t size = GET_MIDDLE_NUMBER(jc->atomic_counter->load());
+        uint64_t size = jc->input_vec->size();
         state->percentage = 100 * (((float) current_count) / (float) size);
     } else if (state->stage == SHUFFLE_STAGE) {
         uint64_t current_count = GET_RIGHT_NUMBER(jc->atomic_counter->load());

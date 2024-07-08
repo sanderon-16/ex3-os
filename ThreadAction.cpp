@@ -1,13 +1,11 @@
 # include "ThreadAction.h"
-# include <iostream>
 
 void *thread_action(void *context) {
 
     auto thread_context = (ThreadContext *) context;
     JobContext *job_context = thread_context->job_context;
 
-    uint64_t input_vector_size = job_context->atomic_counter->load();
-    input_vector_size = GET_MIDDLE_NUMBER(input_vector_size);
+    uint64_t input_vector_size = job_context->input_vec->size();
 
     // loop map
     while (GET_RIGHT_NUMBER((uint64_t) *(job_context->atomic_counter)) <
