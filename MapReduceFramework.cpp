@@ -9,10 +9,9 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     pthread_t threads[multiThreadLevel];
     auto contexts = new ThreadContext[multiThreadLevel];
     auto jc = new JobContext();
-    Barrier barrier(multiThreadLevel);
 
     // initializing the attributes of the global job context TODO check if by reference is ok
-    jc->barrier = &barrier;
+    jc->barrier = new Barrier(multiThreadLevel);
     jc->input_vec = &inputVec;
     jc->client = &client;
     jc->output_vec = &outputVec;
@@ -20,7 +19,7 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     jc->threads_p = threads;
     jc->atomic_counter = new std::atomic<uint64_t>(0x0000000000000000); //todo check for errors in init
     jc->personal_vecs = new std::vector<IntermediateVec*>(0);
-    jc->shuffle_vec = new std::vector<IntermediateVec>(0);
+    jc->shuffle_vec = new std::vector<IntermediateVec*>(0);
     jc->num_threads = multiThreadLevel;
     jc->waiting = false;
 

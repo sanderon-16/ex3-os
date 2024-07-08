@@ -15,8 +15,9 @@
 #define SET_MIDDLE_NUMBER(ac, num) ((num<<MIDDLE_NUMBER_INDEX)|(ac&(~MIDDLE_NUMBER_MASK)))
 #define GET_LEFT_NUMBER(ac) (ac>>LEFT_NUMBER_INDEX)
 #define SET_LEFT_NUMBER(ac,state) ((state<<LEFT_NUMBER_INDEX)|(ac&(~LEFT_NUMBER_MASK)))
+#define SET_RIGHT_NUMBER(ac, num) (num|(ac&(~RIGHT_NUMBER_MASK)))
 #define INC_RIGHT 1
-#define INC_MIDDLE 1<<MIDDLE_NUMBER_INDEX
+#define INC_MIDDLE (uint64_t)1<<MIDDLE_NUMBER_INDEX
 #define INC_LEFT (uint64_t)1<<LEFT_NUMBER_INDEX
 
 
