@@ -29,7 +29,8 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
 
     // changing to map stage and start mapping
     jc->stage = MAP_STAGE;
-    *(jc->atomic_counter) = SET_MIDDLE_NUMBER(jc->atomic_counter->load(), inputVec.size());
+    *(jc->atomic_counter) = SET_LEFT_NUMBER((uint64_t)jc->atomic_counter->load(), (uint64_t)1);
+    *(jc->atomic_counter) = SET_MIDDLE_NUMBER((uint64_t)jc->atomic_counter->load(), inputVec.size());
     for (int i = 0; i < multiThreadLevel; i++) {
         //TODO check for errors
         pthread_create(threads + i, nullptr, thread_action, contexts + i);
@@ -46,11 +47,12 @@ void getJobState(JobHandle job, JobState *state) {
     auto jc = (JobContext*) job;
 
     // the jc stage and percentage is updated independently inside startmapreducejob
-    state->stage = jc->stage;
+    state->stage = (stage_t) GET_LEFT_NUMBER(jc->atomic_counter->load());
     if (state->stage == MAP_STAGE)
     {
-
-        state->percentage =  100 * (((float)*jc->atomic_counter) / (float) jc->input_vec->size());
+        uint64_t current_count = GET_RIGHT_NUMBER(jc->atomic_counter->load());
+        uint64_t size = GET_MIDDLE_NUMBER(jc->atomic_counter->load());
+        state->percentage =  100 * (((float)current_count) / (float) size);
     }
     else
     {
