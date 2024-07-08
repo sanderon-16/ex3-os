@@ -27,8 +27,14 @@ void *thread_action(void *context) {
         // todo fill this
     }
 
+    // add a barrier here
 
     // loop reduce
+    while (GET_MIDDLE_NUMBER((uint64_t)*(job_context->atomic_counter)) > 0) // exit when all the input was reduced
+    {
+        auto old_value = (uint64_t)(job_context->atomic_counter->fetch_sub(INC_MIDDLE)); // advance the atomic timer
+        job_context->client->reduce(&job_context->shuffle_vec.at(GET_MIDDLE_NUMBER(old_value) - 1), context);
+    }
 }
 
 /**

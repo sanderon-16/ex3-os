@@ -61,6 +61,13 @@ void getJobState(JobHandle job, JobState *state) {
 }
 
 void closeJobHandle(JobHandle job) {
+    auto jc = (JobContext*) job;
+    while(jc->stage != REDUCE_STAGE ) // todo needs another condition
+    {
+        // wait for the job to finish
+    }
+    delete jc->atomic_counter;
+    delete jc;
 
 }
 
