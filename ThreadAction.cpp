@@ -3,23 +3,25 @@
 
 void *thread_action(void *context) {
 
-    auto thread_context = (ThreadContext*) context;
-    JobContext* job_context = thread_context->job_context;
+    auto thread_context = (ThreadContext *) context;
+    JobContext *job_context = thread_context->job_context;
+
+    uint64_t input_vector_size = job_context->atomic_counter->load();
+    input_vector_size = GET_MIDDLE_NUMBER(input_vector_size);
 
     // loop map
-    while (*(job_context->atomic_counter) < job_context->input_vec->size()) // exit when all the input was mapped
+    while (*(job_context->atomic_counter) < input_vector_size) // exit when all the input was mapped
     {
         uint32_t old_value = (*(job_context->atomic_counter))++; // advance the atomic timer
         job_context->client->map(job_context->input_vec->at(old_value).first,
-                                          job_context->input_vec->at(old_value).second, context);
+                                 job_context->input_vec->at(old_value).second, context);
     }
 
     // sort intermediate
     std::sort(thread_context->intermediate_vec->begin(), thread_context->intermediate_vec->end(), compare_pairs);
 
     // shuffle if the id is 0
-    if (thread_context->threadID == 0)
-    {
+    if (thread_context->threadID == 0) {
         job_context->stage = SHUFFLE_STAGE;
         // todo fill this
     }
@@ -34,7 +36,6 @@ void *thread_action(void *context) {
  * @param b second pair
  * @return the comparison between them
  */
-int compare_pairs(const IntermediatePair& a, const IntermediatePair& b)
-{
+int compare_pairs(const IntermediatePair &a, const IntermediatePair &b) {
     return *(a.first) < *(b.first);
 }
