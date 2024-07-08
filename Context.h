@@ -19,7 +19,7 @@ struct JobContext {
 
     const InputVec *input_vec;
     OutputVec *output_vec;
-    std::vector<IntermediateVec*> personal_vecs;
+    std::vector<IntermediateVec*> *personal_vecs;
     std::vector<IntermediateVec> *shuffle_vec;
 };
 

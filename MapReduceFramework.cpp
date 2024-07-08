@@ -18,13 +18,15 @@ JobHandle startMapReduceJob(const MapReduceClient &client, const InputVec &input
     jc->output_vec = &outputVec;
     jc->stage = UNDEFINED_STAGE;
     jc->atomic_counter = new std::atomic<uint64_t>(0x0000000000000000); //todo check for errors in init
+    jc->personal_vecs = new std::vector<IntermediateVec*>(0);
+    jc->shuffle_vec = new std::vector<IntermediateVec>(0);
     // todo maybe init shuffle vec
 
     // assigning the job context to each of the thread contexts
     for (int i = 0; i < multiThreadLevel; i++) {
         contexts[i].job_context = jc;
-        jc->personal_vecs[i] = new std::vector<IntermediatePair>();
         contexts[i].threadID = i;
+        jc->personal_vecs->push_back(new IntermediateVec());
     }
 
     // changing to map stage and start mapping
@@ -73,7 +75,7 @@ void closeJobHandle(JobHandle job) {
 
 void emit2(K2 *key, V2 *value, void *context) {
     int id = ((ThreadContext*)context)->threadID;
-    ((ThreadContext*)context)->job_context->personal_vecs[id]->push_back(std::pair<K2 *, V2 *>(key, value));
+    (*((ThreadContext*)context)->job_context->personal_vecs)[id]->push_back(std::pair<K2 *, V2 *>(key, value));
 }
 
 void emit3(K3 *key, V3 *value, void *context) {

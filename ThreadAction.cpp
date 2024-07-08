@@ -20,8 +20,8 @@ void *thread_action(void *context) {
 
 
     // sort intermediate
-    std::sort(job_context->personal_vecs[thread_context->threadID]->begin(),
-              job_context->personal_vecs[thread_context->threadID]->end(), compare_pairs);
+    std::sort((*job_context->personal_vecs)[thread_context->threadID]->begin(),
+              (*job_context->personal_vecs)[thread_context->threadID]->end(), compare_pairs);
 
 
     // shuffle if the id is 0
@@ -31,37 +31,37 @@ void *thread_action(void *context) {
         // todo fill this
         //TODO ac=0
 
-        while (!job_context->personal_vecs.empty()) {
+        while (!(*job_context->personal_vecs).empty()) {
             // create vector for new k
             job_context->shuffle_vec->emplace_back();
 
             // find minimal k
             K2 *lowest_k2 = nullptr;
             for (int i = 0; i < job_context->num_threads; i++) {
-                if (!job_context->personal_vecs[i]->empty() && lowest_k2 == nullptr) {
-                    lowest_k2 = job_context->personal_vecs[i]->front().first;
-                } else if (!job_context->personal_vecs[i]->empty()) {
-                    if (lowest_k2 > job_context->personal_vecs[i]->front().first) {
-                        lowest_k2 = job_context->personal_vecs[i]->front().first;
+                if (!(*job_context->personal_vecs)[i]->empty() && lowest_k2 == nullptr) {
+                    lowest_k2 = (*job_context->personal_vecs)[i]->front().first;
+                } else if (!(*job_context->personal_vecs)[i]->empty()) {
+                    if (lowest_k2 > (*job_context->personal_vecs)[i]->front().first) {
+                        lowest_k2 = (*job_context->personal_vecs)[i]->front().first;
                     }
                 }
             }
 
             // add all pairs
             for (int i = 0; i < job_context->num_threads; i++) {
-                while (!job_context->personal_vecs[i]->empty()) {
-                    if (!(job_context->personal_vecs[i]->front().first > lowest_k2)) {
+                while (!(*job_context->personal_vecs)[i]->empty()) {
+                    if (!((*job_context->personal_vecs)[i]->front().first > lowest_k2)) {
                         job_context->shuffle_vec->back().push_back(
-                                std::move(job_context->personal_vecs[i]->front()));
-                        job_context->personal_vecs[i]->erase(job_context->personal_vecs[i]->begin());
+                                std::move((*job_context->personal_vecs)[i]->front()));
+                        (*job_context->personal_vecs)[i]->erase((*job_context->personal_vecs)[i]->begin());
                         job_context->atomic_counter->fetch_add(INC_MIDDLE);
                     } else {
                         break;
                     }
                 }
-                if (job_context->personal_vecs[i]->empty()) {
-                    delete job_context->personal_vecs[i];
-                    job_context->personal_vecs.erase(job_context->personal_vecs.begin() + i);
+                if ((*job_context->personal_vecs)[i]->empty()) {
+                    delete (*job_context->personal_vecs)[i];
+                    (*job_context->personal_vecs).erase((*job_context->personal_vecs).begin() + i);
                 }
             }
         }
@@ -75,7 +75,7 @@ void *thread_action(void *context) {
     while (GET_MIDDLE_NUMBER((uint64_t)*(job_context->atomic_counter)) > 0) // exit when all the input was reduced
     {
         auto old_value = (uint64_t)(job_context->atomic_counter->fetch_sub(INC_MIDDLE)); // advance the atomic timer
-        job_context->client->reduce(&job_context->shuffle_vec.at(GET_MIDDLE_NUMBER(old_value) - 1), context);
+        job_context->client->reduce(&job_context->shuffle_vec->at(GET_MIDDLE_NUMBER(old_value) - 1), context);
     }
 }
 
